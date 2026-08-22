@@ -22,9 +22,13 @@ export class DoomAdapter {
     if (!(wadBuffer instanceof ArrayBuffer)) throw new Error("DoomAdapter.load requires a WAD ArrayBuffer.");
     this.wadBytes = new Uint8Array(wadBuffer); this.wadLength = this.wadBytes.byteLength;
     const imports = this.createImports();
+    const response = await fetch(this.wasmUrl, { cache: "force-cache" });
+    if (!response.ok) throw new Error(`Unable to load the DOOM runtime (${response.status}). Check that ${this.wasmUrl} is deployed as a static asset.`);
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength < 8) throw new Error("The deployed DOOM runtime is empty or incomplete.");
     let result;
-    try { result = await WebAssembly.instantiateStreaming(fetch(this.wasmUrl), imports); }
-    catch { const response = await fetch(this.wasmUrl); if (!response.ok) throw new Error(`Unable to load ${this.wasmUrl}. Add the doom.wasm runtime to public/.`); result = await WebAssembly.instantiate(await response.arrayBuffer(), imports); }
+    try { result = await WebAssembly.instantiate(bytes, imports); }
+    catch (error) { throw new Error(`The DOOM runtime could not be initialized: ${error.message}`); }
     this.instance = result.instance; this.memory = this.instance.exports.memory;
     this.instance.exports.initGame();
     return this;
