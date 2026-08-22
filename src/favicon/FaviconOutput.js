@@ -3,7 +3,9 @@ export class FaviconOutput {
     this.width = width; this.height = height; this.document = documentRef; this.linkId = linkId;
     this.canvas = documentRef.createElement("canvas"); this.canvas.width = width; this.canvas.height = height; this.canvas.className = "hidden-canvas";
     this.context = this.canvas.getContext("2d", { willReadFrequently: false });
-    this.link = documentRef.getElementById(linkId) || documentRef.createElement("link");
+    // Reuse the page's original icon link. Keeping a second rel="icon" can
+    // make Chromium continue displaying the static icon instead of the data URL.
+    this.link = documentRef.getElementById(linkId) || documentRef.querySelector('link[rel~="icon"]') || documentRef.createElement("link");
     this.link.id = linkId; this.link.rel = "icon"; this.link.type = "image/png";
     if (!this.link.parentNode) documentRef.head.appendChild(this.link);
     this.framesGenerated = 0; this.updates = 0; this.lastFrameAt = 0; this.lastHash = null; this.updateTimes = [];
